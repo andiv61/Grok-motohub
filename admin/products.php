@@ -1,62 +1,56 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-    header("Location: login.php");
+require '../includes/header.php';
+require '../includes/db.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'add') {
+    $stmt = $db->prepare('INSERT INTO products (name, article, dealer_price, retail_price, stock, category, description) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$_POST['name'], $_POST['article'], $_POST['dealer_price'], $_POST['retail_price'], $_POST['stock'], $_POST['category'], $_POST['description']]);
+    header('Location: products.php');
     exit;
 }
-include '../includes/db.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = htmlspecialchars($_POST['name']);
-    $description = htmlspecialchars($_POST['description']);
-    $price = floatval($_POST['price']);
-    $image = htmlspecialchars($_POST['image']);
-    $featured = isset($_POST['featured']) ? 1 : 0;
+if (isset($_GET['action']) && $_GET['action'] === 'list') {
+    $stmt = $db->query('SELECT * FROM products');
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
 
-    $sql = "INSERT INTO products (name, description, price, image, featured) VALUES ('$name', '$description', $price, '$image', $featured)";
-    if ($conn->query($sql) === TRUE) {
-        echo '<p>Мотоцикл добавлен!</p>';
-    } else {
-        echo '<p>Ошибка: ' . $conn->error . '</p>';
-    }
+if (isset($_GET['action']) && $_GET['action'] === 'get' && isset($_GET['id'])) {
+    $stmt = $db->prepare('SELECT * FROM products WHERE id = ?');
+    $stmt->execute([$_GET['id']]);
+    echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'delete') {
+    $stmt = $db->prepare('DELETE FROM products WHERE id = ?');
+    $stmt->execute([$_POST['id']]);
+    echo json_encode(['message' => 'Product deleted']);
+    exit;
 }
 ?>
-
-<main>
-    <h2>Управление мотоциклами</h2>
-    <form method="post">
-        <label>Название:</label>
-        <input type="text" name="name" required>
-        <label>Описание:</label>
-        <textarea name="description" required></textarea>
-        <label>Цена:</label>
-        <input type="number" name="price" step="0.01" required>
-        <label>Изображение (URL):</label>
-        <input type="text" name="image" required>
-        <label>Рекомендуемый:</label>
-        <input type="checkbox" name="featured">
-        <button type="submit" class="btn">Добавить мотоцикл</button>
-    </form>
-
-    <h3>Список мотоциклов</h3>
-    <?php
-    $sql = "SELECT * FROM products";
-    $result = $conn->query($sql);
-    if ($result->num_rows > 0) {
-        echo '<table>';
-        echo '<tr><th>ID</th><th>Название</th><th>Цена</th><th>Рекомендуемый</th></tr>';
-        while ($row = $result->fetch_assoc()) {
-            echo '<tr>';
-            echo '<td>' . $row['id'] . '</td>';
-            echo '<td>' . htmlspecialchars($row['name']) . '</td>';
-            echo '<td>$' . number_format($row['price'], 2) . '</td>';
-            echo '<td>' . ($row['featured'] ? 'Да' : 'Нет') . '</td>';
-            echo '</tr>';
-        }
-        echo '</table>';
-    } else {
-        echo '<p>Мотоциклы не найдены.</p>';
-    }
-    $conn->close();
-    ?>
-</main>
+<h2>Товары</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Артикул</th>
+            <th>Цена (розница)</th>
+            <th>Остаток</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody id="products-table"></tbody>
+</table>
+<h3>Добавить товар</h3>
+<form method="POST" action="products.php?action=add">
+    <input type="text" class="form-control mb-2" name="name" placeholder="Название" required>
+    <input type="text" class="form-control mb-2" name="article" placeholder="Артикул" required>
+    <input type="number" class="form-control mb-2" name="dealer_price" placeholder="Дилерская цена" required>
+    <input type="number" class="form-control mb-2" name="retail_price" placeholder="Розничная цена" required>
+    <input type="number" class="form-control mb-2" name="stock" placeholder="Остаток" required>
+    <input type="text" class="form-control mb-2" name="category" placeholder="Категория">
+    <textarea class="form-control mb-2" name="description" placeholder="Описание"></textarea>
+    <button type="submit" class="btn btn-primary">Добавить</button>
+</form>
+<?php require '../includes/footer.php'; ?>

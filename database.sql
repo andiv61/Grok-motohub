@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   product_id INTEGER,
   quantity INTEGER,
+  customer_id INTEGER,
   customer_name TEXT,
   customer_phone TEXT,
   status TEXT,
@@ -23,13 +24,28 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE,
+  email TEXT UNIQUE,
   password TEXT,
-  role TEXT
+  role TEXT,
+  reset_token TEXT,
+  reset_expiry TEXT
 );
 
--- Удаляем существующего пользователя admin, если он есть
-DELETE FROM users WHERE username = 'admin';
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  phone TEXT,
+  type TEXT, -- 'retail' или 'wholesale'
+  created_at TEXT DEFAULT (datetime('now'))
+);
 
--- Добавляем тестового пользователя (admin:password)
-INSERT INTO users (username, password, role) VALUES ('admin', '$2y$10$nT5vmJMKSKjpg4KefpSI/.spMlf3Qrp4UykvEBqP5AQi073dueJ4W', 'admin');
+-- Удаляем существующего пользователя admin
+DELETE FROM users WHERE email = 'admin@racer.ru';
+
+-- Добавляем тестового администратора (email: admin@racer.ru, пароль: password)
+INSERT INTO users (email, password, role) VALUES ('admin@racer.ru', '$2y$10$3mQ4ZwKg2hIg0SGOLP99EuhhC0J3tGuCrLvsDQuoMic8LcC8Rxg26', 'admin');
+
+-- Добавляем тестовых клиентов
+INSERT OR IGNORE INTO customers (name, email, phone, type) VALUES ('Иван Иванов', 'ivan@example.com', '+79991234567', 'retail');
+INSERT OR IGNORE INTO customers (name, email, phone, type) VALUES ('ООО МотоТрейд', 'mototrade@example.com', '+79997654321', 'wholesale');

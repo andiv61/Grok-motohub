@@ -1,12 +1,10 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "racer_motorcycles";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+try {
+    $db = new PDO('sqlite:' . __DIR__ . '/../db/racer.db');
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Ошибка подключения к базе данных: " . $e->getMessage());
 }
 ?>

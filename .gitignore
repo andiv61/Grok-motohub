@@ -1,2 +1,1 @@
-/includes/db.php
-/images/*.png
+db/racer.db .csv
