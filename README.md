@@ -252,3 +252,13 @@ GitHub Issues: Создать issue.
 
 Лицензия
 MIT License. См. файл LICENSE (добавить, если требуется).
+# Grok MotoHub
+Сайт для продажи мотоциклов с админкой.
+
+## Установка
+1. Установите Node.js.
+2. Выполните npm install.
+3. Запустите npm start.
+
+## Использование
+- Откройте http://localhost:3000/admin/products.html для админки.
