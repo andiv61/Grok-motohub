@@ -1,50 +1,27 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Товары - MotoHub</title>
-    <link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
-    <div class="navbar">
-        <a href="index.html">Главная</a>
-        <a href="products.html">Товары</a>
-    </div>
-    <div id="content">
-        <h2>Управление товарами</h2>
-        <h3>Загрузка каталога (Excel)</h3>
-        <form action="/api/import/catalog" method="post" enctype="multipart/form-data">
-            <label for="catalogFile">Выберите Excel-файл каталога:</label>
-            <input type="file" name="file" id="catalogFile" accept=".xls,.xlsx">
-            <button type="submit">Загрузить</button>
-        </form>
-        <h3>Импорт/экспорт прайсов</h3>
-        <form action="/api/import/stock" method="post" enctype="multipart/form-data">
-            <label for="stockFile">Импорт остатков (Excel):</label>
-            <input type="file" name="file" id="stockFile" accept=".xls,.xlsx">
-            <button type="submit">Импортировать</button>
-        </form>
-        <form action="/api/export/stock" method="get">
-            <label for="exportFormat">Экспорт прайса:</label>
-            <select name="format" id="exportFormat">
-                <option value="xls">Excel</option>
-                <option value="csv">CSV</option>
-            </select>
-            <button type="submit">Экспортировать</button>
-        </form>
-        <h3>Отправка по расписанию</h3>
-        <form id="scheduleForm">
-            <label for="scheduleTime">Время отправки (чч:мм):</label>
-            <input type="time" id="scheduleTime" name="scheduleTime">
-            <label for="clientSelect">Выберите клиентов:</label>
-            <select id="clientSelect" name="clientSelect" multiple>
-                <option value="client1">Клиент 1 (Розничная цена)</option>
-                <option value="client2">Клиент 2 (Дилерская цена)</option>
-            </select>
-            <button type="submit">Назначить</button>
-        </form>
-    </div>
-    <script src="../js/admin.js"></script>
-</body>
-</html>
+const express = require('express');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const fs = require('fs').promises;
+const path = require('path');
+const nodeSchedule = require('node-schedule');
+const app = express();
+const upload = multer({ dest: 'uploads/' });
+
+app.use(express.json());
+app.use(express.static('public'));
+
+// --- Импорт каталога ---
+app.post('/api/import/catalog', upload.single('file'), async (req, res) => {
+  try {
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const catalog = { catalog: { scooters_up_to_50cc: data } };
+    await fs.writeFile('data/catalog.json', JSON.stringify(catalog, null, 2));
+    await fs.unlink(filePath);
+    res.json({ message: 'Каталог успешно загружен' });
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка: ' + error.message });
+  }
+});
