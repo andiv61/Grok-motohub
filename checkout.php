@@ -5,39 +5,27 @@ include 'includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $customer_name = htmlspecialchars($_POST['customer_name']);
-    $customer_email = htmlspecialchars($_POST['customer_email']);
+    $customer_phone = htmlspecialchars($_POST['customer_phone']);
     $total = 0;
 
     foreach ($_SESSION['cart'] as $id => $quantity) {
-        $sql = "SELECT price FROM products WHERE id = $id";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $total += $row['price'] * $quantity;
+        $stmt = $db->prepare("SELECT retail_price FROM products WHERE id = ?");
+        $stmt->execute([$id]);
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $total += $row['retail_price'] * $quantity;
         }
     }
 
-    $sql = "INSERT INTO orders (customer_name, customer_email, total) VALUES ('$customer_name', '$customer_email', $total)";
-    if ($conn->query($sql) === TRUE) {
+    // Пример: один заказ = одна позиция, если нужна детализация, делайте таблицу order_items
+    $stmt = $db->prepare("INSERT INTO orders (customer_name, customer_phone, status, source) VALUES (?, ?, ?, ?)");
+    if ($stmt->execute([$customer_name, $customer_phone, 'новый', 'site'])) {
         unset($_SESSION['cart']);
         echo '<p>Заказ успешно оформлен!</p>';
     } else {
         echo '<p>Ошибка при оформлении заказа.</p>';
     }
-    $conn->close();
 } else {
 ?>
 <main>
-    <h2>Оформление заказа</h2>
-    <form method="post">
-        <label>Имя:</label>
-        <input type="text" name="customer_name" required>
-        <label>Email:</label>
-        <input type="email" name="customer_email" required>
-        <button type="submit" class="btn">Подтвердить заказ</button>
-    </form>
-</main>
-<?php
-}
-include 'includes/footer.php';
-?>
+<!-- форма заказа -->
+<?php } ?>

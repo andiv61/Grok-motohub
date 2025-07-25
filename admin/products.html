@@ -1,27 +1,13 @@
-const express = require('express');
-const multer = require('multer');
-const xlsx = require('xlsx');
-const fs = require('fs').promises;
-const path = require('path');
-const nodeSchedule = require('node-schedule');
-const app = express();
-const upload = multer({ dest: 'uploads/' });
+<h3>Загрузка каталога (Excel)</h3>
+<form action="http://localhost:3000/api/import/catalog" method="post" enctype="multipart/form-data">
+  <input type="file" name="file" id="catalogFile" accept=".xls,.xlsx,.csv">
+  <button type="submit">Загрузить каталог</button>
+</form>
+<a href="http://localhost:3000/api/export/catalog" class="btn">Скачать текущий каталог</a>
 
-app.use(express.json());
-app.use(express.static('public'));
-
-// --- Импорт каталога ---
-app.post('/api/import/catalog', upload.single('file'), async (req, res) => {
-  try {
-    const filePath = req.file.path;
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    const catalog = { catalog: { scooters_up_to_50cc: data } };
-    await fs.writeFile('data/catalog.json', JSON.stringify(catalog, null, 2));
-    await fs.unlink(filePath);
-    res.json({ message: 'Каталог успешно загружен' });
-  } catch (error) {
-    res.status(500).json({ message: 'Ошибка: ' + error.message });
-  }
-});
+<h3>Импорт прайс-листа (Excel)</h3>
+<form action="http://localhost:3000/api/import/pricelist" method="post" enctype="multipart/form-data">
+  <input type="file" name="file" accept=".xls,.xlsx,.csv">
+  <button type="submit">Загрузить прайс-лист</button>
+</form>
+<a href="http://localhost:3000/api/export/pricelist" class="btn">Скачать текущий прайс-лист</a>
