@@ -32,9 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
         $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
         $stmt = $db->prepare('UPDATE users SET reset_token = ?, reset_expiry = ? WHERE email = ?');
         $stmt->execute([$token, $expiry, $email]);
-        $reset_link = "http://localhost/grok-motohub/admin/reset_password.php?email=$email&token=$token";
+        $reset_link = "https://motospark.ru/admin/reset_password.php?email=$email&token=$token";
         require_once '../includes/mailer.php';
-        sendMail($email, 'Сброс пароля Racer', "Перейдите по ссылке для сброса пароля: $reset_link");
+        sendMail(
+            $email,
+            'Сброс пароля MotoSpark',
+            "Здравствуйте!\n\nВы запросили сброс пароля на сайте MotoSpark.\n\nДля восстановления пароля перейдите по ссылке:\n$reset_link\n\nЕсли вы не запрашивали сброс пароля — проигнорируйте это письмо."
+        );
         $reset_message = 'Ссылка для сброса пароля отправлена на ваш email';
     } else {
         $reset_error = 'Email не найден';
@@ -59,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
             <input type="hidden" name="login" value="1">
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="admin@racer.ru" required>
+                <input type="email" class="form-control" id="email" name="email" value="motospark1@yandex.ru" required>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Пароль</label>

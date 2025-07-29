@@ -2,7 +2,7 @@
 
 <main>
     <h2>Контакты</h2>
-    <p>Свяжитесь с нами: info@racer-motorcycles.com</p>
+    <p>Свяжитесь с нами: motospark1@yandex.ru</p>
     <form method="post" action="contact.php">
         <label>Имя:</label>
         <input type="text" name="name" required>

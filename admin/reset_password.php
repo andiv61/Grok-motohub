@@ -2,9 +2,14 @@
 session_start();
 require '../includes/db.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (isset($_GET['email'], $_GET['token'])) {
     $email = $_GET['email'];
     $token = $_GET['token'];
+} else {
+    $error = 'Некорректная ссылка';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($email, $token)) {
     $new_password = trim($_POST['new_password']);
     $stmt = $db->prepare('SELECT * FROM users WHERE email = ? AND reset_token = ? AND reset_expiry > ?');
     $stmt->execute([$email, $token, date('Y-m-d H:i:s')]);
@@ -23,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Сброс пароля</title>
+    <title>Сброс пароля MotoSpark</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
