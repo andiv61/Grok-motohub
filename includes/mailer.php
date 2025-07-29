@@ -2,6 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Исправлено! Было DIR → _DIR_
 require_once _DIR_ . '/../vendor/autoload.php';
 
 function sendMail($to, $subject, $body) {
@@ -12,7 +13,7 @@ function sendMail($to, $subject, $body) {
         $mail->Host = 'smtp.yandex.ru';
         $mail->SMTPAuth = true;
         $mail->Username = 'motospark1@yandex.ru';
-        $mail->Password = 'gjibxnrggjfgpwdp'; // пароль приложения Яндекса
+        $mail->Password = 'yahuhpoulahytqnw'; // пароль приложения Яндекс
         $mail->SMTPSecure = 'ssl';
         $mail->Port = 465;
 
@@ -22,6 +23,9 @@ function sendMail($to, $subject, $body) {
         $mail->Subject = $subject;
         $mail->Body = $body;
         $mail->isHTML(false);
+
+        // Временно для диагностики (убрать после теста):
+        // $mail->SMTPDebug = 2;
 
         $mail->send();
         return true;
