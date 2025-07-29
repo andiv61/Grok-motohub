@@ -1,126 +1,35 @@
-<?php
-session_start();
-require '../includes/db.php';
-
-$error = '';
-$reset_message = '';
-$reset_error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
-        header('Location: dashboard.php');
-        exit;
-    } else {
-        $error = 'Неверный email или пароль';
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
-    $email = trim($_POST['reset_email']);
-    $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($user) {
-        $token = bin2hex(random_bytes(16));
-        $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
-        $stmt = $db->prepare('UPDATE users SET reset_token = ?, reset_expiry = ? WHERE email = ?');
-        $stmt->execute([$token, $expiry, $email]);
-        $reset_link = "https://motospark.ru/admin/reset_password.php?email=$email&token=$token";
-        require_once '../includes/mailer.php';
-        sendMail(
-            $email,
-            'Сброс пароля MotoSpark',
-            "Здравствуйте!\n\nВы запросили сброс пароля на сайте MotoSpark.\n\nДля восстановления пароля перейдите по ссылке:\n$reset_link\n\nЕсли вы не запрашивали сброс пароля — проигнорируйте это письмо."
-        );
-        $reset_message = 'Ссылка для сброса пароля отправлена на ваш email';
-    } else {
-        $reset_error = 'Email не найден';
-    }
-}
-?>
+<!-- login.php -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Вход в админку</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0; }
+        .container { width: 300px; margin: 100px auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input[type="email"], input[type="password"] { width: 100%; padding: 10px; margin: 10px 0; }
+        button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; }
+        a { display: block; text-align: right; margin-top: 10px; color: #4CAF50; text-decoration: none; }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2>Вход в админ-панель</h2>
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-danger"><?php echo $error; ?></div>
-        <?php endif; ?>
-        <form method="POST">
-            <input type="hidden" name="login" value="1">
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="motospark1@yandex.ru" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Пароль</label>
-                <div class="input-group">
-                    <input type="password" class="form-control" id="password" name="password" required>
-                    <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()" tabindex="-1">
-                        <i class="bi bi-eye" id="toggleIcon"></i>
-                    </button>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Войти</button>
-            <a href="#" data-bs-toggle="modal" data-bs-target="#resetModal">Забыли пароль?</a>
+    <div class="container">
+        <h2>Вход в админку</h2>
+        <form method="POST" action="login_process.php">
+            <input type="email" name="email" placeholder="Email" required><br>
+            <input type="password" name="password" placeholder="Пароль" required><br>
+            <button type="submit">Войти</button>
+            <a href="#" onclick="document.getElementById('forgot-form').style.display='block'; return false;">Забыли пароль?</a>
         </form>
 
-        <!-- Modal для восстановления пароля -->
-        <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="resetModalLabel">Восстановление пароля</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <?php if (!empty($reset_message)): ?>
-                            <div class="alert alert-success"><?php echo $reset_message; ?></div>
-                        <?php endif; ?>
-                        <?php if (!empty($reset_error)): ?>
-                            <div class="alert alert-danger"><?php echo $reset_error; ?></div>
-                        <?php endif; ?>
-                        <form method="POST">
-                            <input type="hidden" name="reset" value="1">
-                            <div class="mb-3">
-                                <label for="reset_email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="reset_email" name="reset_email" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Отправить ссылку</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <!-- Форма для восстановления пароля -->
+        <div id="forgot-form" style="display:none; margin-top: 10px;">
+            <h3>Восстановление пароля</h3>
+            <form method="POST" action="send_reset_email.php">
+                <input type="email" name="email" placeholder="Ваш email" required><br>
+                <button type="submit">Отправить ссылку</button>
+            </form>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function togglePassword() {
-            const passwordField = document.getElementById('password');
-            const icon = document.getElementById('toggleIcon');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-            } else {
-                passwordField.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-            }
-        }
-    </script>
 </body>
 </html>

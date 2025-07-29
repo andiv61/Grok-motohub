@@ -13,7 +13,7 @@ function sendMail($to, $subject, $body) {
         $mail->Host = 'smtp.yandex.ru';
         $mail->SMTPAuth = true;
         $mail->Username = 'motospark1@yandex.ru';
-        $mail->Password = 'yahuhpoulahytqnw'; // пароль приложения Яндекс
+        $mail->Password = 'enswnnmbkybrfvbm'; // пароль приложения Яндекс
         $mail->SMTPSecure = 'ssl';
         $mail->Port = 465;
 
