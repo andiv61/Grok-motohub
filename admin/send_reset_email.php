@@ -1,56 +1,57 @@
-<?php
-// admin/send_reset_email.php
+// После генерации токена $token и перед перенаправлением:
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+$to = $email;
+$subject = "Восстановление пароля Motospark";
 
-require '../vendor/autoload.php';
-require '../db.php'; // Подключение к SQLite
+// Формируем ссылку с абсолютным путем
+$resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/Motospark_giga/admin/reset_password.php?token=" . urlencode($token);
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim($_POST['email']);
+// HTML-версия письма
+$message = '
+<html>
+<head>
+    <title>Восстановление пароля</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .button { 
+            background: #0066cc; color: white; 
+            padding: 10px 15px; text-decoration: none;
+            border-radius: 4px; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <h2>Восстановление пароля</h2>
+    <p>Для сброса пароля нажмите кнопку ниже:</p>
+    <p><a href="'.$resetLink.'" class="button">Сбросить пароль</a></p>
+    <p>Или скопируйте ссылку в браузер:<br>'.$resetLink.'</p>
+    <p><small>Ссылка действительна 1 час. Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</small></p>
+</body>
+</html>';
 
-    // Проверка, существует ли пользователь с таким email
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+// Текстовая версия для почтовых клиентов без поддержки HTML
+$textVersion = "Для сброса пароля перейдите по ссылке:\n\n"
+             . $resetLink . "\n\n"
+             . "Ссылка действительна 1 час.";
 
-    if (!$user) {
-        die("❌ Email не найден.");
-    }
+// Формируем заголовки
+$headers = "From: Motospark <no-reply@motospark.ru>\r\n";
+$headers .= "Reply-To: support@motospark.ru\r\n";
+$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+$headers .= "MIME-Version: 1.0\r\n";
+$headers .= "X-Mailer: PHP/" . phpversion();
 
-    // Генерация токена
-    $token = bin2hex(random_bytes(50));
+// Отправляем письмо
+$mailSent = mail($to, $subject, $message, $headers);
 
-    // Сохраняем токен
-    $stmt = $pdo->prepare("UPDATE users SET reset_token = ? WHERE email = ?");
-    $stmt->execute([$token, $email]);
-
-    // Ссылка для сброса пароля
-    $resetLink = "http://localhost/Motospark_giga/admin/reset_password.php?token=$token";
-
-    $mail = new PHPMailer(true);
-
-    try {
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.yandex.ru';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'motospark1@yandex.ru';
-        $mail->Password   = 'enswnnmbkybrfvbm'; // App-пароль из Яндекса
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom('motospark1@yandex.ru', 'Motospark Admin');
-        $mail->addAddress($email);
-
-        $mail->Subject = 'Сброс пароля';
-        $mail->Body    = "Чтобы сбросить пароль, перейдите по ссылке:\n$resetLink";
-
-        $mail->send();
-
-        echo "✅ Письмо отправлено. Проверьте вашу почту.";
-    } catch (Exception $e) {
-        echo "❌ Ошибка отправки: {$mail->ErrorInfo}";
-    }
+if (!$mailSent) {
+    // Логируем ошибку
+    error_log("[" . date('Y-m-d H:i:s') . "] Ошибка отправки письма на $email: " . print_r(error_get_last(), true));
+    
+    $_SESSION['error'] = "Ошибка отправки письма. Попробуйте позже или обратитесь в поддержку.";
+    header("Location: forgot_password.php");
+    exit;
 }
+
+// Логируем успешную отправку
+error_log("[" . date('Y-m-d H:i:s') . "] Письмо для сброса пароля отправлено на $email");
