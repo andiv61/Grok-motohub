@@ -1,29 +1,27 @@
 <?php
-require_once 'config.php';
+require 'config.php';
 
 try {
-    // Подключаемся без указания базы данных
-    $pdo = new PDO("mysql:host=$host;charset=$charset", $user, $password, $options);
+    $pdo = new PDO($dsn, $user, $password, $options);
     
-    // Создаем базу данных если не существует
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
-    $pdo->exec("USE `$dbname`");
-    
-    // Правильный SQL для MariaDB/MySQL
     $sql = "CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
         username VARCHAR(50) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         email VARCHAR(100),
-        role VARCHAR(20) DEFAULT 'user',
+        reset_token VARCHAR(100),
+        reset_token_expiry DATETIME,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     
     $pdo->exec($sql);
     
-    echo "База данных и таблица 'users' успешно созданы!<br>";
-    echo "Можете перейти к <a href='add_test_user.php'>добавлению тестового пользователя</a>";
+    // Добавляем тестового пользователя
+    $hashedPassword = password_hash('admin123', PASSWORD_DEFAULT);
+    $pdo->exec("INSERT IGNORE INTO users (username, password, email) 
+               VALUES ('admin', '$hashedPassword', 'admin@example.com')");
     
+    echo "Таблица users создана. Тестовый пользователь: admin/admin123";
 } catch (PDOException $e) {
     die("Ошибка инициализации БД: " . $e->getMessage());
 }
